@@ -1,0 +1,15 @@
+[
+    {
+      "orderId": "AMZ001",
+      "customerName": "Rahul",
+      "customerEmail": "rahul@example.com",
+      "amount": 1099
+    },
+    {
+      "orderId": "AMZ002",
+      "customerName": "Anita",
+      "customerEmail": "anita@example.com",
+      "amount": 1299
+    }
+  ]
+  
