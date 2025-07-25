@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const cron = require('node-cron');
-const { ingestMockOrders } = require('./jobs/cronIngest');
+const { ingestMockOrders } = require('./src/jobs/cronIngest');
 
 dotenv.config();
 const app = express();
@@ -12,8 +12,8 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', require('./routes/auth'));
-app.use('/api/orders', require('./routes/orders'));
+app.use('/api/auth', require('./src/routes/auth'));
+app.use('/api/orders', require('./src/routes/orders'));
 
 // Cron Job: Simulate order ingestion every 10 min
 cron.schedule('*/10 * * * *', ingestMockOrders);
