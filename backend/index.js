@@ -16,7 +16,7 @@ app.use('/api/auth', require('./src/routes/auth'));
 app.use('/api/orders', require('./src/routes/orders'));
 
 // Cron Job: Simulate order ingestion every 10 min
-cron.schedule('*/10 * * * *', ingestMockOrders);
+// cron.schedule('*/10 * * * *', ingestMockOrders);
 
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
