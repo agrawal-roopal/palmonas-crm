@@ -3,6 +3,52 @@ import api from '../api';
 import OrderDetailsModal from '../components/OrderDetailsModal';
 import NewOrderModal from '../components/NewOrderModal';
 import PlatformIcon from '../components/PlatformIcon';
+import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
+import axios from 'axios';
+
+function Analytics() {
+  const [data, setData] = useState(null);
+
+  useEffect(() => {
+    axios.get(`${import.meta.env.VITE_API_BASE_URL}/analytics`)
+      .then(res => setData(res.data))
+      .catch(err => console.error(err));
+  }, []);
+
+  if (!data) return null;
+
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+
+  return (
+    <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="bg-white p-4 shadow rounded">
+        <h3 className="text-lg font-bold">Total Orders</h3>
+        <p className="text-2xl">{data.totalOrders}</p>
+      </div>
+      <div className="bg-white p-4 shadow rounded col-span-2">
+        <h3 className="text-lg font-bold">Orders by Platform</h3>
+        <PieChart width={300} height={200}>
+          <Pie
+            data={data.ordersByPlatform}
+            dataKey="count"
+            nameKey="_id"
+            cx="50%"
+            cy="50%"
+            outerRadius={80}
+            fill="#8884d8"
+            label
+          >
+            {data.ordersByPlatform.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+            ))}
+          </Pie>
+          <Tooltip />
+          <Legend />
+        </PieChart>
+      </div>
+    </div>
+  );
+}
 
 function Dashboard() {
   const [orders, setOrders] = useState([]);
@@ -99,6 +145,7 @@ function Dashboard() {
         </select>
       </div>
 
+      <Analytics />
       {/* Orders Table */}
       <div className="p-6">
         <table className="w-full border">
