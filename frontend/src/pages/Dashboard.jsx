@@ -1,33 +1,45 @@
 import { useEffect, useState } from 'react';
 import api from '../api';
+import OrderDetailsModal from '../components/OrderDetailsModal';
+import NewOrderModal from '../components/NewOrderModal';
+import PlatformIcon from '../components/PlatformIcon';
 
 function Dashboard() {
   const [orders, setOrders] = useState([]);
+  const [status, setStatus] = useState("");
+  const [platform, setPlatform] = useState("");
+  const [search, setSearch] = useState("");
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showNewModal, setShowNewModal] = useState(false);
+  const [page, setPage] = useState(1);
+  const limit = 10;
 
-  const fetchOrders = async () => {
-    try {
-      const res = await api.get('/orders');
-      setOrders(res.data);
-    } catch (err) {
+  useEffect(() => {
+    api.get('/orders', {
+      params: { status, platform, search, page, limit }
+    })
+    .then(res => setOrders(res.data))
+    .catch(() => {
       alert('Failed to fetch orders. Please login again.');
       localStorage.removeItem('token');
       window.location.href = '/';
-    }
-  };
+    });
+  }, [status, platform, search, page]);
 
   const updateStatus = async (orderId, newStatus) => {
     try {
       await api.patch(`/orders/${orderId}/status`, { status: newStatus });
-      fetchOrders();
+      // Refetch orders after update
+      api.get('/orders', {
+        params: { status, platform, search }
+      })
+      .then(res => setOrders(res.data))
+      .catch(err => console.error(err));
     } catch (err) {
       alert('Failed to update order status');
       console.error(err);
     }
   };
-
-  useEffect(() => {
-    fetchOrders();
-  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -47,6 +59,46 @@ function Dashboard() {
         </button>
       </div>
 
+      <div className="flex gap-2 p-6 items-center">
+        <button
+          onClick={() => setShowNewModal(true)}
+          className="px-4 py-2 bg-green-600 text-white rounded"
+        >
+          Add Order
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-2 p-6 items-center">
+        <input
+          type="text"
+          placeholder="Search"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          className="border p-2 rounded"
+        />
+        <select
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+          className="border p-2 rounded"
+        >
+          <option value="">All Statuses</option>
+          <option value="pending">Pending</option>
+          <option value="shipped">Shipped</option>
+          <option value="delivered">Delivered</option>
+        </select>
+        <select
+          value={platform}
+          onChange={e => setPlatform(e.target.value)}
+          className="border p-2 rounded"
+        >
+          <option value="">All Platforms</option>
+          <option value="amazon">Amazon</option>
+          <option value="flipkart">Flipkart</option>
+          {/* Add more platforms as needed */}
+        </select>
+      </div>
+
       {/* Orders Table */}
       <div className="p-6">
         <table className="w-full border">
@@ -61,30 +113,55 @@ function Dashboard() {
           </thead>
           <tbody>
             {orders.map((o) => (
-              <tr key={o._id}>
+              <tr key={o._id} onClick={() => setSelectedOrder(o)} className="cursor-pointer hover:bg-gray-50">
                 <td className="p-2 border">{o.orderId}</td>
                 <td className="p-2 border">{o.customerName}</td>
-                <td className="p-2 border">{o.platform}</td>
+                <td className="p-2 border"><PlatformIcon platform={o.platform}/> {o.platform}</td>
                 <td className="p-2 border">{o.status}</td>
                 <td className="p-2 border space-x-2">
-                  <button
-                    onClick={() => updateStatus(o.orderId, 'shipped')}
-                    className="bg-green-500 text-white px-2 py-1 rounded"
+                  <select
+                    value={o.status}
+                    onChange={e => {
+                      e.stopPropagation();
+                      updateStatus(o.orderId, e.target.value);
+                    }}
+                    className="border p-1 rounded"
                   >
-                    Mark Shipped
-                  </button>
-                  <button
-                    onClick={() => updateStatus(o.orderId, 'delivered')}
-                    className="bg-blue-500 text-white px-2 py-1 rounded"
-                  >
-                    Mark Delivered
-                  </button>
+                    <option value="pending">Pending</option>
+                    <option value="shipped">Shipped</option>
+                    <option value="delivered">Delivered</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
+        <div className="flex justify-center mt-4 gap-2">
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <span className="px-3 py-1">Page {page}</span>
+          <button
+            onClick={() => setPage(p => p + 1)}
+            className="px-3 py-1 bg-gray-200 rounded"
+            disabled={orders.length < limit}
+          >
+            Next
+          </button>
+        </div>
       </div>
+      <OrderDetailsModal order={selectedOrder} onClose={() => setSelectedOrder(null)} />
+      {showNewModal && (
+        <NewOrderModal
+          onClose={() => setShowNewModal(false)}
+          onCreated={newOrder => setOrders([newOrder, ...orders])}
+        />
+      )}
     </div>
   );
 }
